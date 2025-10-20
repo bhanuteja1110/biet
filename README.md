@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## Cursor College of Engineering — Student Dashboard
 
 Tech stack: React + Vite + Tailwind v4, Firebase (Auth, Firestore, Storage), React Router, Recharts, Framer Motion, React Big Calendar.
@@ -19,3 +20,6 @@ npm run dev
 ```
 
 
+=======
+# biet
+>>>>>>> db743e2a229daca0c407d51253a2eb12cb4e4c45
