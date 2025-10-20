@@ -23,7 +23,6 @@ import Placements from './pages/Placements';
 import Transport from './pages/Transport';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import { useAuth } from './auth/AuthContext';
 import AdminStudents from './pages/AdminStudents';
 
 export default function App() {

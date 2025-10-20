@@ -1,15 +1,7 @@
 import { useAuth } from '../auth/AuthContext';
 import { motion } from 'framer-motion';
-import { ResponsiveContainer } from 'recharts';
 import { useEffect, useState } from 'react';
 
-const attendanceData = [
-  { day: 'Mon', value: 80 },
-  { day: 'Tue', value: 78 },
-  { day: 'Wed', value: 82 },
-  { day: 'Thu', value: 76 },
-  { day: 'Fri', value: 85 },
-];
 
 export default function Dashboard() {
   const { user } = useAuth();
