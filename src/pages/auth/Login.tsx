@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -11,22 +11,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [monkeyState, setMonkeyState] = useState("idle"); // idle | email-focused | password-focused | blinking
   const navigate = useNavigate();
-
-  // Blink every 2 seconds when not typing password
-  useEffect(() => {
-    if (monkeyState === "password-focused") return; // don't blink when covering eyes
-
-    const interval = setInterval(() => {
-      setMonkeyState("blinking");
-      setTimeout(() => {
-        if (monkeyState !== "password-focused") setMonkeyState("idle");
-      }, 200);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [monkeyState]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,29 +101,12 @@ export default function Login() {
           onSubmit={onSubmit}
           className="card p-8 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-neutral-200/50 dark:border-neutral-700/50"
         >
-          {/* 🐵 Monkey Mascot with smooth animation */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <img
-                src={
-                  monkeyState === "password-focused"
-                    ? "/monkey-hands.png"
-                    : monkeyState === "blinking"
-                    ? "/monkey-closed.png"
-                    : "/monkey-open.png"
-                }
-                alt="Monkey Mascot"
-                className="w-32 h-32 drop-shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105"
-              />
-            </div>
-          </div>
-
           {/* 🎓 College Logo + Name */}
-          <div className="flex flex-col items-center gap-3 mb-8">
+          <div className="flex flex-col items-center gap-4 mb-8">
             <img
               src="/college-logo.png"
               alt="College Logo"
-              className="w-14 h-14 object-contain drop-shadow-md"
+              className="w-24 h-24 object-contain drop-shadow-lg"
             />
             <div className="text-center">
               <h1 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">
@@ -161,12 +129,10 @@ export default function Login() {
                 type="email"
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:ring-indigo-400/50 dark:focus:border-indigo-400 transition-all duration-200"
                 value={email}
-                onFocus={() => setMonkeyState("email-focused")}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   setError(null);
                 }}
-                onBlur={() => setMonkeyState("idle")}
                 placeholder="Enter your email"
                 disabled={loading}
                 required
@@ -182,12 +148,10 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 className="w-full pl-10 pr-12 py-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:ring-indigo-400/50 dark:focus:border-indigo-400 transition-all duration-200"
                 value={password}
-                onFocus={() => setMonkeyState("password-focused")}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setError(null);
                 }}
-                onBlur={() => setMonkeyState("idle")}
                 placeholder="Enter your password"
                 disabled={loading}
                 required
@@ -247,7 +211,12 @@ export default function Login() {
           <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
               <span>Designed and developed by</span>
-              <div className="flex items-center gap-2">
+              <a
+                href="https://aspread.site"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-200"
+              >
                 <img
                   src="/spread-logo.png"
                   alt="SPREAD"
@@ -257,8 +226,8 @@ export default function Login() {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
-                <span className="font-semibold text-indigo-600 dark:text-indigo-400">SPREAD</span>
-              </div>
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">SPREAD</span>
+              </a>
             </div>
           </div>
         </form>
