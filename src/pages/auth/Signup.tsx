@@ -4,9 +4,9 @@ import { auth } from '../../firebase/firebase';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function Signup() {
-  const [name, setName] = useState('Student');
-  const [email, setEmail] = useState('student@example.com');
-  const [password, setPassword] = useState('password');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -47,5 +47,4 @@ export default function Signup() {
     </div>
   );
 }
-
 

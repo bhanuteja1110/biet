@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initialize Firestore</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyACeOsWl1ZNK8Qf9bAsl3bi2BlfcYPzQT0",
+            authDomain: "biet-16d1b.firebaseapp.com",
+            projectId: "biet-16d1b",
+            storageBucket: "biet-16d1b.firebasestorage.app",
+            messagingSenderId: "542214630853",
+            appId: "1:542214630853:web:4ab37517b9c11e9f132fac",
+            measurementId: "G-1QH78VHRXJ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        // Check auth state
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('initSection').style.display = 'block';
+                document.getElementById('userInfo').textContent = `Logged in as: ${user.email}`;
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('initSection').style.display = 'none';
+            }
+        });
+
+        async function handleLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            if (!email || !password) {
+                errorDiv.textContent = 'Please enter email and password';
+                return;
+            }
+
+            try {
+                errorDiv.textContent = '';
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                errorDiv.textContent = 'Login failed: ' + error.message;
+            }
+        }
+
+        async function initializeDatabase() {
+            if (!currentUser) {
+                alert('Please login first');
+                return;
+            }
+
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = 'Initializing...';
+
+            try {
+                // First, ensure user has admin role in Firestore
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    email: currentUser.email,
+                    displayName: currentUser.displayName || 'Admin',
+                    role: 'admin',
+                    updatedAt: serverTimestamp(),
+                }, { merge: true });
+                statusDiv.innerHTML += '<br>✓ Set user as admin';
+
+                // Create a sample class
+                const classId = 'class-cse-1st-year';
+                await setDoc(doc(db, 'classes', classId), {
+                    name: 'CSE - 1st Year',
+                    department: 'CSE',
+                    year: '1st Year',
+                    createdAt: serverTimestamp(),
+                });
+                statusDiv.innerHTML += '<br>✓ Created sample class';
+
+                // Create timetable
+                await setDoc(doc(db, 'classes', classId, 'config', 'timetable'), {
+                    classId,
+                    rows: [
+                        { day: 'Mon', slots: ['Maths', 'CSE', 'Physics', 'Library'] },
+                        { day: 'Tue', slots: ['Chemistry', 'CSE Lab', 'Electronics', 'Sports'] },
+                        { day: 'Wed', slots: ['CSE', 'Maths', 'English', 'Workshop'] },
+                        { day: 'Thu', slots: ['Physics', 'CSE', 'Library', 'Seminar'] },
+                        { day: 'Fri', slots: ['CSE', 'Chemistry', 'Electronics', 'Club'] },
+                    ],
+                    updatedAt: serverTimestamp(),
+                });
+                statusDiv.innerHTML += '<br>✓ Created timetable';
+
+                // Create transport routes
+                const routes = [
+                    { route: 'R1', origin: 'Kompally', time: '07:15', stops: ['Suchitra', 'Bollaram', 'Patancheru'] },
+                    { route: 'R2', origin: 'Kukatpally', time: '07:20', stops: ['JNTU', 'Miyapur', 'BHEL'] },
+                    { route: 'R3', origin: 'LB Nagar', time: '07:10', stops: ['Dilshuknagar', 'Kothapet', 'Chaderghat'] },
+                ];
+
+                for (const route of routes) {
+                    await setDoc(doc(db, 'transport', 'routes', 'list', route.route), {
+                        ...route,
+                        updatedAt: serverTimestamp(),
+                    });
+                }
+                statusDiv.innerHTML += '<br>✓ Created transport routes';
+
+                // Create sample placement
+                await setDoc(doc(collection(db, 'placements'), 'placement-1'), {
+                    company: 'TCS',
+                    role: 'Software Engineer',
+                    date: '2025-12-05',
+                    ctc: '₹ 7 LPA',
+                    apply: 'https://nextstep.tcs.com',
+                    createdAt: serverTimestamp(),
+                });
+                statusDiv.innerHTML += '<br>✓ Created sample placement';
+
+                statusDiv.innerHTML += '<br><br><strong style="color: green;">✅ Initialization Complete!</strong>';
+                statusDiv.innerHTML += '<br><br><strong>Next Steps:</strong>';
+                statusDiv.innerHTML += '<br>1. Your account is now set as admin';
+                statusDiv.innerHTML += '<br>2. Create more users in Firebase Console → Authentication';
+                statusDiv.innerHTML += '<br>3. For each user, set their role in Firestore → users collection';
+                statusDiv.innerHTML += '<br>4. Set classId for students and teachers';
+
+            } catch (error) {
+                statusDiv.innerHTML += '<br><br><strong style="color: red;">Error: ' + error.message + '</strong>';
+                console.error('Error:', error);
+            }
+        }
+
+        window.handleLogin = handleLogin;
+        window.initializeDatabase = initializeDatabase;
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #000;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #333;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            line-height: 1.8;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        #userInfo {
+            color: green;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Firestore Database Initialization</h1>
+        
+        <div id="loginForm">
+            <h2>Login Required</h2>
+            <p>You need to login first to initialize the database. Use an existing account or create one in your app.</p>
+            <input type="email" id="email" placeholder="Your email" />
+            <input type="password" id="password" placeholder="Your password" />
+            <button onclick="handleLogin()">Login</button>
+            <div id="loginError" class="error"></div>
+        </div>
+
+        <div id="initSection" style="display: none;">
+            <div id="userInfo"></div>
+            <p>Click the button below to create initial collections and sample data in your Firestore database.</p>
+            <button onclick="initializeDatabase()">Initialize Firestore</button>
+            <div id="status"></div>
+        </div>
+    </div>
+</body>
+</html>

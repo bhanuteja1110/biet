@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../../firebase/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [email, setEmail] = useState("student@example.com");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState("student");
   const [monkeyState, setMonkeyState] = useState("idle"); // idle | email-focused | password-focused | blinking
   const navigate = useNavigate();
 
@@ -33,10 +32,64 @@ export default function Login() {
     setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      if (role === "teacher") navigate("/teacher");
-      else if (role === "admin") navigate("/admin");
-      else navigate("/");
-      await setDoc(doc(db, "users", cred.user.uid), { role }, { merge: true });
+      
+      // Get actual role from Firestore (not from user input!)
+      let actualRole: 'student' | 'teacher' | 'admin' | null = null;
+      try {
+        const userDoc = await getDoc(doc(db, "users", cred.user.uid));
+        
+        // Check if document exists
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const roleValue = userData?.role;
+          
+          // Normalize role to lowercase (same as AuthContext does)
+          if (roleValue) {
+            const roleStr = String(roleValue).trim().toLowerCase();
+            if (roleStr === 'student' || roleStr === 'teacher' || roleStr === 'admin') {
+              actualRole = roleStr as 'student' | 'teacher' | 'admin';
+            }
+          }
+          
+          console.log(`[Login] Role detected for ${cred.user.email}: ${actualRole} (from Firestore: ${roleValue})`);
+        } else {
+          // Document doesn't exist - this is okay, user might be new
+          // AuthContext will handle role detection later
+          console.warn('User document does not exist in Firestore for:', cred.user.uid);
+          console.warn('User will be logged in with default role. Admin should create user profile.');
+        }
+        
+        // Store password in sessionStorage for admin/teacher to create users without logging out
+        // This is cleared when browser closes (sessionStorage)
+        if (actualRole === "admin" || actualRole === "teacher") {
+          sessionStorage.setItem('admin_password', password);
+        }
+        
+        // Navigate based on ACTUAL role from Firestore, not user selection
+        // If role is null/undefined, AuthContext will handle it and user can still access student dashboard
+        console.log(`[Login] Navigating based on role: ${actualRole}`);
+        if (actualRole === "admin") {
+          console.log('[Login] Admin detected, navigating to /admin');
+          navigate("/admin", { replace: true });
+        } else if (actualRole === "teacher") {
+          console.log('[Login] Teacher detected, navigating to /teacher');
+          navigate("/teacher", { replace: true });
+        } else {
+          // Default to student dashboard if no role or role is student
+          console.log('[Login] No role or student role, navigating to /dashboard');
+          navigate("/dashboard", { replace: true });
+        }
+      } catch (roleErr: any) {
+        console.error('Error fetching user role:', roleErr);
+        
+        // Don't block login on errors - let AuthContext handle role detection
+        // This allows users to login even if there's a temporary Firestore issue
+        console.warn('Could not fetch user role during login, but allowing login to proceed');
+        console.warn('AuthContext will attempt to fetch role after login');
+        
+        // Still try to navigate - AuthContext will handle role-based routing
+        navigate("/dashboard");
+      }
     } catch (err: any) {
       let message = "Failed to sign in. Please try again.";
       const code: string | undefined = err?.code;
@@ -109,16 +162,6 @@ export default function Login() {
               placeholder="Password"
             />
 
-            <select
-              className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-500/40"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-              <option value="admin">Admin</option>
-            </select>
-
             {error && <div className="text-sm text-rose-600">{error}</div>}
 
             <button
@@ -142,6 +185,5 @@ export default function Login() {
     </div>
   );
 }
-
 
 

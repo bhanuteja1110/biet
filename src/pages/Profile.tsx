@@ -1,20 +1,60 @@
 import { useAuth } from '../auth/AuthContext';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { db } from '../firebase/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+
+type ProfileData = {
+  department?: string;
+  year?: string;
+  fatherName?: string;
+  rollNumber?: string;
+  contact?: string;
+  dob?: string;
+  busRoute?: string;
+};
 
 export default function Profile() {
   const { user } = useAuth();
+  const [profileData, setProfileData] = useState<ProfileData>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchProfile = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setProfileData(userDoc.data() as ProfileData);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
   const qrData = useMemo(() => {
     const payload = {
       uid: user?.uid ?? 'guest',
       name: user?.displayName ?? 'Student',
-      email: user?.email ?? 'student@example.com',
-      dob: '2007-01-01',
-      fatherName: 'Ramesh Kumar',
-      busRoute: 'R2',
+      email: user?.email ?? '',
+      dob: profileData.dob ?? '',
+      fatherName: profileData.fatherName ?? '',
+      busRoute: profileData.busRoute ?? '',
       college: 'BIET',
     } as const;
     return encodeURIComponent(JSON.stringify(payload));
-  }, [user]);
+  }, [user, profileData]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-neutral-500">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -22,39 +62,39 @@ export default function Profile() {
         <div className="flex items-center gap-5">
           <img src={user?.photoURL ?? 'https://i.pravatar.cc/200?img=12'} alt="avatar" className="size-24 rounded-2xl object-cover ring-2 ring-white/60 shadow" />
           <div>
-            <div className="text-2xl font-semibold tracking-tight">{user?.displayName ?? 'Bhanuteja'}</div>
-            <div className="text-neutral-500">{user?.email ?? 'bhanuteja@biet.ac.in'}</div>
+            <div className="text-2xl font-semibold tracking-tight">{user?.displayName ?? 'Student'}</div>
+            <div className="text-neutral-500">{user?.email ?? ''}</div>
           </div>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-4">
             <div className="text-sm text-neutral-500">Department</div>
-            <div className="mt-1 font-medium">IT</div>
+            <div className="mt-1 font-medium">{profileData.department || '—'}</div>
           </div>
           <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-4">
             <div className="text-sm text-neutral-500">Year</div>
-            <div className="mt-1 font-medium">1st Year</div>
+            <div className="mt-1 font-medium">{profileData.year || '—'}</div>
           </div>
           <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-4">
             <div className="text-sm text-neutral-500">Father's Name</div>
-            <div className="mt-1 font-medium">Prabhakar</div>
+            <div className="mt-1 font-medium">{profileData.fatherName || '—'}</div>
           </div>
           <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-4">
             <div className="text-sm text-neutral-500">Roll Number</div>
-            <div className="mt-1 font-medium">25E11A1285</div>
+            <div className="mt-1 font-medium">{profileData.rollNumber || '—'}</div>
           </div>
           <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-4">
             <div className="text-sm text-neutral-500">Contact</div>
-            <div className="mt-1 font-medium">+91 90000 12345</div>
+            <div className="mt-1 font-medium">{profileData.contact || '—'}</div>
           </div>
           <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-4">
             <div className="text-sm text-neutral-500">Date of Birth</div>
-            <div className="mt-1 font-medium">01 Jan 2007</div>
+            <div className="mt-1 font-medium">{profileData.dob || '—'}</div>
           </div>
           <div className="rounded-2xl bg-neutral-100 dark:bg-neutral-800 p-4">
             <div className="text-sm text-neutral-500">Bus Route</div>
-            <div className="mt-1 font-medium">R2</div>
+            <div className="mt-1 font-medium">{profileData.busRoute || '—'}</div>
           </div>
         </div>
 
@@ -69,5 +109,4 @@ export default function Profile() {
     </div>
   );
 }
-
 

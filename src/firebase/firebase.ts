@@ -25,4 +25,3 @@ void isSupported().then((ok) => {
   if (ok) getAnalytics(app);
 });
 
-

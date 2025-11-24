@@ -1,0 +1,268 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user document exists
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    // Helper function to get user role (safe - checks existence first)
+    function getUserRole() {
+      return userExists() ? 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role : 
+        null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && userExists() && getUserRole() == 'admin';
+    }
+    
+    // Helper function to check if user is teacher
+    function isTeacher() {
+      return request.auth != null && userExists() && getUserRole() == 'teacher';
+    }
+    
+    // Helper function to check if user is student
+    function isStudent() {
+      return request.auth != null && userExists() && getUserRole() == 'student';
+    }
+    
+    // Helper function to check if user has role set
+    function hasRole() {
+      return request.auth != null && userExists() && getUserRole() != null;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone authenticated can read user profiles
+      allow read: if request.auth != null;
+      // Users can create their own profile (for initialization)
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Users can update their own profile, admins can update any
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Only admins can delete
+      allow delete: if isAdmin();
+    }
+    
+    // Departments collection (replaces classes)
+    match /departments/{departmentId} {
+      // Anyone authenticated can read departments
+      allow read: if request.auth != null;
+      // Allow create/update for admins OR authenticated users without role (for initialization)
+      allow create: if request.auth != null && (!hasRole() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Years collection
+    match /years/{yearId} {
+      // Anyone authenticated can read years
+      allow read: if request.auth != null;
+      // Allow create/update for admins OR authenticated users without role (for initialization)
+      allow create: if request.auth != null && (!hasRole() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Clubs collection
+    match /clubs/{clubId} {
+      // Anyone authenticated can read clubs
+      allow read: if request.auth != null;
+      // Allow create/update for admins OR authenticated users without role (for initialization)
+      allow create: if request.auth != null && (!hasRole() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Classes collection (deprecated - kept for backward compatibility, but should use departments)
+    match /classes/{classId} {
+      // Anyone authenticated can read classes
+      allow read: if request.auth != null;
+      // Allow create/update for admins OR authenticated users without role (for initialization)
+      allow create: if request.auth != null && (!hasRole() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isAdmin());
+      allow delete: if isAdmin();
+      
+      // Timetable subcollection
+      match /config/timetable/{timetableId} {
+        allow read: if request.auth != null;
+        // Allow write for admins or users without role (for initialization)
+        allow create: if request.auth != null && (!hasRole() || isAdmin());
+        allow update: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+        allow delete: if isAdmin();
+      }
+    }
+    
+    // Attendance collection
+    match /attendance/{attendanceId} {
+      // Students can read their own attendance, teachers/admins can read all
+      allow read: if request.auth != null && (
+        !hasRole() || // Allow if role not set yet (initial setup)
+        resource.data.studentId == request.auth.uid ||
+        isTeacher() ||
+        isAdmin()
+      );
+      // Teachers and admins can create/update attendance (or if no role - for initialization)
+      allow create: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      // Allow teachers and admins to delete attendance (teachers manage their classes)
+      // Also allow delete if the attendance was marked by the current user (for corrections)
+      allow delete: if request.auth != null && (
+        !hasRole() || 
+        isTeacher() || 
+        isAdmin() ||
+        (resource.data.markedBy == request.auth.uid)
+      );
+    }
+    
+    // Attendance Statistics collection (stores calculated attendance percentages)
+    match /attendanceStats/{studentId} {
+      // Students can read their own stats, teachers/admins can read all
+      allow read: if request.auth != null && (
+        !hasRole() || // Allow if role not set yet (initial setup)
+        studentId == request.auth.uid ||
+        isTeacher() ||
+        isAdmin()
+      );
+      // Teachers and admins can write stats (calculated automatically when marking attendance)
+      allow write: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+    }
+    
+    // Marks collection
+    match /marks/{markId} {
+      // Students can read their own marks
+      allow read: if request.auth != null && (
+        !hasRole() || // Allow if role not set yet
+        resource.data.studentId == request.auth.uid ||
+        isTeacher() ||
+        isAdmin()
+      );
+      // Teachers and admins can create/update marks
+      allow create: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Assignments collection
+    match /assignments/{assignmentId} {
+      // Anyone authenticated can read assignments
+      allow read: if request.auth != null;
+      // Teachers and admins can create/update assignments (or if no role - for initialization)
+      allow create: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Assignment submissions collection
+    match /assignmentSubmissions/{submissionId} {
+      // Students can read their own submissions
+      // Teachers/admins can read submissions for their class
+      allow read: if request.auth != null && (
+        !hasRole() || // Allow if role not set yet
+        resource.data.studentId == request.auth.uid ||
+        isTeacher() ||
+        isAdmin()
+      );
+      // Students can create their own submissions
+      allow create: if request.auth != null && (!hasRole() || (isStudent() && request.resource.data.studentId == request.auth.uid));
+      // Teachers and admins can update (grade) submissions
+      allow update: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Exams collection
+    match /exams/{examId} {
+      // Anyone authenticated can read exams
+      allow read: if request.auth != null;
+      // Teachers and admins can create/update exams (or if no role - for initialization)
+      allow create: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow update: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Announcements collection
+    match /announcements/{announcementId} {
+      // Anyone authenticated can read announcements
+      allow read: if request.auth != null;
+      // Teachers and admins can create announcements (or if no role - for initial setup)
+      allow create: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      // Only admins can update/delete
+      allow update, delete: if request.auth != null && (!hasRole() || isAdmin());
+    }
+    
+    // Events collection
+    match /events/{eventId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+      allow update, delete: if request.auth != null && (!hasRole() || isAdmin());
+    }
+    
+    // Transport routes
+    match /transport/routes/list/{routeId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (!hasRole() || isAdmin());
+    }
+    
+    // Placements collection
+    match /placements/{placementId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (!hasRole() || isAdmin());
+    }
+    
+    // Library collection
+    match /library/{bookId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (!hasRole() || isAdmin());
+    }
+    
+    // Fees collection
+    match /fees/{feeId} {
+      // Students can read their own fees
+      allow read: if request.auth != null && (
+        !hasRole() || // Allow if role not set yet
+        resource.data.studentId == request.auth.uid ||
+        isAdmin()
+      );
+      allow write: if request.auth != null && (!hasRole() || isAdmin());
+    }
+    
+    // Payments collection
+    match /payments/{paymentId} {
+      // Students can read their own payments
+      allow read: if request.auth != null && (
+        !hasRole() || // Allow if role not set yet
+        resource.data.studentId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if request.auth != null && (!hasRole() || (isStudent() && request.resource.data.studentId == request.auth.uid));
+      allow update, delete: if request.auth != null && (!hasRole() || isAdmin());
+    }
+    
+    // Messages/Chat collection
+    match /messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.senderId == request.auth.uid;
+    }
+    
+    // Documents collection
+    match /documents/{documentId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (!hasRole() || isTeacher() || isAdmin());
+    }
+    
+    // Timetables collection
+    match /timetables/{timetableId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    // Classes Held collection (tracks when classes were conducted)
+    match /classesHeld/{classHeldId} {
+      allow read: if request.auth != null;
+      allow write: if isTeacher() || isAdmin();
+    }
+  }
+}
