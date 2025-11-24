@@ -246,7 +246,7 @@ export default function Login() {
           {/* Footer - Designed by SPREAD */}
           <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-              <span>Designed and developed by</span>
+              <span>Designed and Developed by</span>
               <div className="flex items-center gap-2">
                 <img
                   src="/spread-logo.png"
