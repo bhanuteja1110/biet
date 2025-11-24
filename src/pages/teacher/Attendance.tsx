@@ -1,7 +1,7 @@
 import { useAuth } from '../../auth/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { markAttendance } from '../../utils/firestore';
-import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import Loader from '../../components/Loader';
 

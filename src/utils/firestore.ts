@@ -12,7 +12,6 @@ import {
   orderBy, 
   limit,
   addDoc,
-  deleteDoc,
   serverTimestamp,
   Timestamp,
   writeBatch
@@ -351,7 +350,7 @@ export async function calculateAndUpdateAttendanceStats(studentId: string): Prom
   try {
     // Get user profile to get classId (department)
     const userProfile = await getUserProfile(studentId);
-    const classId = userProfile?.department || userProfile?.dept || '';
+    const classId = userProfile?.department || '';
     
     // Get all attendance records for this student
     const attendanceQuery = query(
@@ -602,7 +601,7 @@ export async function createMark(
 // Assignment Functions
 // =========================
 
-export function getAssignmentsForStudent(studentId: string, classId: string) {
+export function getAssignmentsForStudent(_studentId: string, classId: string) {
   return query(
     collection(db, 'assignments'),
     where('classId', '==', classId),
@@ -998,7 +997,7 @@ export function getStudentsInClass(classId: string) {
 
 // Deprecated: Teachers now use departmentIds instead of classId
 // This function is kept for backward compatibility but may not work if classes collection is deleted
-export function getClassesForTeacher(teacherId: string) {
+export function getClassesForTeacher(_teacherId: string) {
   // Return empty query result - teachers should use departmentIds from their user profile
   return query(collection(db, 'departments'), where('__name__', '==', '__nonexistent__'));
 }

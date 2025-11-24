@@ -66,7 +66,7 @@ export default function Assignments() {
         const userProfile = await getUserProfile(user.uid);
         // Use department field (which is the department ID) as classId for querying assignments
         // Assignments are stored with classId = department ID
-        const departmentId = userProfile?.department || userProfile?.dept || userProfile?.classId;
+        const departmentId = userProfile?.department || userProfile?.classId;
         if (departmentId) {
           setClassId(departmentId);
           console.log('Student department/classId:', departmentId);

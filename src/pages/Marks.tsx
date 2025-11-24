@@ -2,7 +2,6 @@ import { useAuth } from '../auth/AuthContext';
 import { useState, useEffect } from 'react';
 import { 
   getMarksForStudent, 
-  getMarksForClass, 
   updateMark, 
   createMark,
   getStudentsInClass,

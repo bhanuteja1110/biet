@@ -5,15 +5,11 @@ import {
   getStudentsInClass, 
   markAttendance, 
   getAttendanceForStudent,
-  calculateAttendancePercentage,
-  getAttendanceForClass,
   getAttendanceStats,
-  type UserProfile,
-  type AttendanceRecord,
-  type AttendanceStats
+  type AttendanceStats,
+  type UserProfile
 } from '../utils/firestore';
-import { onSnapshot, query, where, collection, doc } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { onSnapshot } from 'firebase/firestore';
 import Loader from '../components/Loader';
 
 function colorFor(p: number) {
@@ -129,9 +125,9 @@ export default function Attendance() {
                     const updated = [...prev];
                     const existingIndex = updated.findIndex(s => s.name === subject);
                     if (existingIndex >= 0) {
-                      updated[existingIndex] = { name: subject, percent };
+                      updated[existingIndex] = { name: subject, percent, present: present, classesHeld: total };
                     } else {
-                      updated.push({ name: subject, percent });
+                      updated.push({ name: subject, percent, present: present, classesHeld: total });
                     }
                     return updated;
                   });

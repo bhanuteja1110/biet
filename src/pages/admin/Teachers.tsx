@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { db, auth } from '../../firebase/firebase';
-import { collection, query, where, onSnapshot, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, getDocs, doc, updateDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { useAuth } from '../../auth/AuthContext';
 import { Trash2, Plus, X } from 'lucide-react';
@@ -86,7 +86,7 @@ export default function AdminTeachers() {
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     const fetchAllUsers = async () => {
       try {

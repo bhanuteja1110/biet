@@ -4,7 +4,6 @@ import { CalendarDays, ClipboardList, GraduationCap, Home, LogOut, Settings, Use
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase/firebase';
 import { useEffect } from 'react';
-import Loader from '../Loader';
 
 function navForRole(role: 'student' | 'teacher' | 'admin' | null) {
   if (role === 'teacher') {

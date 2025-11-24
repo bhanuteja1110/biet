@@ -18,7 +18,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const unsubscribes: Array<() => void> = [];
 
     // Set a timeout to prevent infinite loading

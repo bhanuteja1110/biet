@@ -153,7 +153,7 @@ export default function AdminStudents() {
 
   useEffect(() => {
     let isMounted = true;
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     const fetchAllUsers = async () => {
       try {
@@ -393,6 +393,8 @@ export default function AdminStudents() {
     }
   }
 
+  // Removed unused function - inline editing is handled differently
+  /*
   async function updateStudentField(studentId: string, field: 'name' | 'email' | 'roll' | 'dept' | 'year' | 'fatherName' | 'contact' | 'section', value: string) {
     if (!user) return;
 
@@ -422,10 +424,12 @@ export default function AdminStudents() {
       setSaving(null);
     }
   }
+  */
 
-  function update(idx: number, key: keyof Student, value: string) {
-    setRows(prev => prev.map((r, i) => i === idx ? { ...r, [key]: value } : r));
-  }
+  // Removed unused function
+  // function update(idx: number, key: keyof Student, value: string) {
+  //   setRows(prev => prev.map((r, i) => i === idx ? { ...r, [key]: value } : r));
+  // }
 
   async function handleImageUpload(file: File) {
     if (!user) return;
@@ -656,7 +660,7 @@ export default function AdminStudents() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, idx) => (
+                {rows.map((r) => (
                   <tr key={r.id} className="border-t border-neutral-200/60 dark:border-neutral-800">
                     <td className="py-2">{r.name}</td>
                     <td>{r.email}</td>

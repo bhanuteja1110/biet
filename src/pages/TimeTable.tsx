@@ -21,7 +21,7 @@ export default function TimeTable() {
         const userProfile = await getUserProfile(user.uid);
         
         // Get department and year IDs from user profile
-        const departmentId = userProfile?.department || userProfile?.dept || '';
+        const departmentId = userProfile?.department || '';
         const yearId = userProfile?.year || '';
         
         if (departmentId && yearId) {

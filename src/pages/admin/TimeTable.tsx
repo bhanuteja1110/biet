@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import { saveTimeTable, getTimeTableByDeptYear, type TimeTable } from '../../utils/firestore';
 import Loader from '../../components/Loader';

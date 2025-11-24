@@ -2,11 +2,10 @@ import { useAuth } from '../../auth/AuthContext';
 import { useState, useEffect } from 'react';
 import { 
   getStudentsInClass, 
-  markAttendance, 
-  getUserProfile,
+  markAttendance,
   type UserProfile
 } from '../../utils/firestore';
-import { onSnapshot, collection, query, where } from 'firebase/firestore';
+import { onSnapshot, collection, query } from 'firebase/firestore';
 import { db } from '../../firebase/firebase';
 import Loader from '../../components/Loader';
 

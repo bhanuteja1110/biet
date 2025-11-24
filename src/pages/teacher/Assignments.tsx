@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { storage, db } from '../../firebase/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../../firebase/firebase';
 import { useAuth } from '../../auth/AuthContext';
 import Loader from '../../components/Loader';
 import {
@@ -10,7 +9,7 @@ import {
   type Assignment as AssignmentType,
   type AssignmentSubmission
 } from '../../utils/firestore';
-import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 
 type Assignment = {
   id: string;
