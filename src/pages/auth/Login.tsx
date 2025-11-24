@@ -1,24 +1,92 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../../firebase/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, User, Lock, Loader2 } from "lucide-react";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState(""); // Can be roll number or email
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  
+  // Helper function to check if input is an email
+  const isEmail = (str: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
+  };
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const trimmedIdentifier = identifier.trim();
+      
+      if (!trimmedIdentifier) {
+        setError("Please enter your roll number or email.");
+        setLoading(false);
+        return;
+      }
+      
+      let userEmail: string;
+      
+      // Check if input is an email or roll number
+      if (isEmail(trimmedIdentifier)) {
+        // User entered an email - use it directly
+        console.log('[Login] Email detected, using directly:', trimmedIdentifier);
+        userEmail = trimmedIdentifier;
+      } else {
+        // User entered a roll number - find user by roll number
+        console.log('[Login] Roll number detected, searching in Firestore:', trimmedIdentifier);
+        
+        try {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('rollNumber', '==', trimmedIdentifier));
+          const querySnapshot = await getDocs(q);
+          
+          if (querySnapshot.empty) {
+            console.log('[Login] No user found with roll number:', trimmedIdentifier);
+            setError("No user found with this roll number. Please check and try again.");
+            setLoading(false);
+            return;
+          }
+          
+          // Get the first matching user (roll numbers should be unique)
+          const userDoc = querySnapshot.docs[0];
+          const userData = userDoc.data();
+          userEmail = userData.email;
+          
+          console.log('[Login] Found user by roll number:', { 
+            uid: userDoc.id, 
+            email: userEmail, 
+            rollNumber: userData.rollNumber,
+            displayName: userData.displayName 
+          });
+          
+          if (!userEmail) {
+            console.error('[Login] User document missing email:', userDoc.id);
+            setError("User account is missing email. Please contact administrator.");
+            setLoading(false);
+            return;
+          }
+        } catch (queryError: any) {
+          console.error('[Login] Firestore query error:', queryError);
+          if (queryError.code === 'failed-precondition') {
+            setError("Database index required for roll number search. Please contact administrator or use email to login.");
+          } else {
+            setError(`Database error: ${queryError.message || 'Please try again.'}`);
+          }
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Now authenticate with the email (either directly entered or found from roll number)
+      console.log('[Login] Attempting authentication with email:', userEmail);
+      const cred = await signInWithEmailAndPassword(auth, userEmail, password);
       
       // Get actual role from Firestore (not from user input!)
       let actualRole: 'student' | 'teacher' | 'admin' | null = null;
@@ -78,16 +146,30 @@ export default function Login() {
         navigate("/dashboard");
       }
     } catch (err: any) {
+      console.error('[Login] Authentication error:', err);
       let message = "Failed to sign in. Please try again.";
       const code: string | undefined = err?.code;
-      if (code === "auth/invalid-credential" || code === "auth/wrong-password")
-        message = "Invalid email or password.";
-      else if (code === "auth/user-not-found")
-        message = "No user found with this email.";
-      else if (code === "auth/too-many-requests")
+      
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
+        message = "Invalid roll number/email or password.";
+      } else if (code === "auth/user-not-found") {
+        message = "No user found with this roll number or email.";
+      } else if (code === "auth/too-many-requests") {
         message = "Too many attempts. Please wait and try again.";
-      else if (code === "auth/network-request-failed")
+      } else if (code === "auth/network-request-failed") {
         message = "Network error. Check your connection.";
+      } else if (code === "failed-precondition") {
+        message = "Database index required. Please contact administrator or use email to login.";
+      } else if (err.message) {
+        // Use the error message if available
+        if (err.message.includes("roll number") || err.message.includes("No user found")) {
+          message = err.message;
+        } else {
+          message = `Error: ${err.message}`;
+        }
+      }
+      
+      console.error('[Login] Final error message:', message);
       setError(message);
     } finally {
       setLoading(false);
@@ -120,20 +202,24 @@ export default function Login() {
 
           {/* 🧠 Input Fields */}
           <div className="space-y-4">
-            {/* Email Input */}
+            {/* Roll Number or Email Input */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-neutral-400" />
+                {isEmail(identifier) ? (
+                  <Mail className="h-5 w-5 text-neutral-400" />
+                ) : (
+                  <User className="h-5 w-5 text-neutral-400" />
+                )}
               </div>
               <input
-                type="email"
+                type="text"
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:ring-indigo-400/50 dark:focus:border-indigo-400 transition-all duration-200"
-                value={email}
+                value={identifier}
                 onChange={(e) => {
-                  setEmail(e.target.value);
+                  setIdentifier(e.target.value);
                   setError(null);
                 }}
-                placeholder="Enter your email"
+                placeholder="Enter your roll number or email"
                 disabled={loading}
                 required
               />
@@ -183,7 +269,7 @@ export default function Login() {
             {/* Login Button */}
             <button
               type="submit"
-              disabled={loading || !email || !password}
+              disabled={loading || !identifier || !password}
               className="w-full mt-6 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
             >
               {loading ? (

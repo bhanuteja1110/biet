@@ -36,8 +36,12 @@ service cloud.firestore {
     
     // Users collection
     match /users/{userId} {
-      // Anyone authenticated can read user profiles
-      allow read: if request.auth != null;
+      // Allow read for authenticated users OR unauthenticated users (needed for login by roll number)
+      // This allows login queries before authentication
+      allow read: if true;
+      // Allow querying users collection (needed for login by roll number)
+      // Allow for both authenticated and unauthenticated users (login happens before auth)
+      allow list: if true;
       // Users can create their own profile (for initialization)
       allow create: if request.auth != null && request.auth.uid == userId;
       // Users can update their own profile, admins can update any
