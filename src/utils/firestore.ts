@@ -455,16 +455,29 @@ export async function calculateAndUpdateAttendanceStats(studentId: string): Prom
       }
     });
     
-    // Calculate percentages
-    const overallPercentage = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 0;
-    
-    // Calculate subject-wise percentages
+    // Calculate subject-wise percentages first
     Object.keys(subjectWise).forEach(subject => {
       const stats = subjectWise[subject];
       // Use classesHeld as total if available, otherwise use total attendance records
       const totalForPercentage = stats.classesHeld > 0 ? stats.classesHeld : stats.total;
       stats.percentage = totalForPercentage > 0 ? Math.round((stats.present / totalForPercentage) * 100) : 0;
     });
+    
+    // Calculate overall percentage based on total classes held across all subjects
+    let totalClassesHeld = 0;
+    let totalPresentAcrossSubjects = 0;
+    
+    Object.keys(subjectWise).forEach(subject => {
+      const stats = subjectWise[subject];
+      const classesHeldForSubject = stats.classesHeld > 0 ? stats.classesHeld : stats.total;
+      totalClassesHeld += classesHeldForSubject;
+      totalPresentAcrossSubjects += stats.present;
+    });
+    
+    // Use classes held for overall percentage calculation, fallback to attendance records if no classes held data
+    const overallPercentage = totalClassesHeld > 0 
+      ? Math.round((totalPresentAcrossSubjects / totalClassesHeld) * 100)
+      : (totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 0);
     
     // Store in Firestore
     await setDoc(doc(db, 'attendanceStats', studentId), {

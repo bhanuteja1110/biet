@@ -15,7 +15,7 @@ import Loader from '../components/Loader';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const name = user?.displayName ?? 'Student';
+  const [studentName, setStudentName] = useState<string>('Student');
   const [attendancePercent, setAttendancePercent] = useState(0);
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
   const [assignmentsDue, setAssignmentsDue] = useState(0);
@@ -34,8 +34,13 @@ export default function Dashboard() {
         if (userProfile?.classId) {
           setClassId(userProfile.classId);
         }
+        // Get student's full name from profile
+        const fullName = userProfile?.displayName || user?.displayName || 'Student';
+        setStudentName(fullName);
       } catch (error) {
         console.error('Error fetching user profile:', error);
+        // Fallback to user displayName if profile fetch fails
+        setStudentName(user?.displayName || 'Student');
       }
     };
 
@@ -64,9 +69,30 @@ export default function Dashboard() {
         if (snapshot.exists()) {
           const data = snapshot.data() as AttendanceStats;
           setAttendanceStats(data);
-          setAttendancePercent(data.overallPercentage || 0);
+          
+          // Recalculate overall percentage from subject-wise data if available
+          // This ensures we use classes held, not just attendance records
+          let calculatedOverallPercent = data.overallPercentage || 0;
+          
+          if (data.subjectWise && Object.keys(data.subjectWise).length > 0) {
+            let totalClassesHeld = 0;
+            let totalPresent = 0;
+            
+            Object.values(data.subjectWise).forEach(stats => {
+              const classesHeld = stats.classesHeld || stats.total || 0;
+              totalClassesHeld += classesHeld;
+              totalPresent += stats.present || 0;
+            });
+            
+            if (totalClassesHeld > 0) {
+              calculatedOverallPercent = Math.round((totalPresent / totalClassesHeld) * 100);
+            }
+          }
+          
+          setAttendancePercent(calculatedOverallPercent);
           console.log('📊 Attendance stats loaded:', {
-            overall: data.overallPercentage,
+            overall: calculatedOverallPercent,
+            storedOverall: data.overallPercentage,
             total: data.totalClasses,
             present: data.presentClasses,
             absent: data.absentClasses,
@@ -237,7 +263,7 @@ export default function Dashboard() {
   }, [user, classId]);
 
   useEffect(() => {
-    if (attendancePercent === 0) return;
+    // Always animate, even if attendancePercent is 0
     let frame = 0;
     const durationMs = 1200;
     const start = performance.now();
@@ -261,7 +287,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 flex flex-col min-h-screen">
+    <div className="space-y-6 flex flex-col">
       <div className="flex-grow">
         <div className="grid gap-4 md:grid-cols-3">
           {[
@@ -288,16 +314,16 @@ export default function Dashboard() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3 mt-6">
-          <div className="card p-5 md:col-span-2">
-            <div className="flex items-center justify-between">
+          <div className="card p-5 md:col-span-2 flex flex-col" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+            <div className="flex items-center justify-between flex-shrink-0">
               <div>
-                <div className="text-lg font-semibold">Welcome, {name}</div>
+                <div className="text-lg font-semibold">Welcome, {studentName}</div>
                 <div className="text-sm text-neutral-500 dark:text-neutral-400">
                   Bharat Institute of Engineering & Technology (BIET)
                 </div>
               </div>
             </div>
-            <div className="mt-6 grid place-items-center">
+            <div className="mt-6 grid place-items-center flex-shrink-0">
               <div
                 className="relative size-48 cursor-pointer"
                 title="Click to replay"
@@ -312,36 +338,51 @@ export default function Dashboard() {
                     d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"
                   />
                   <path
-                    className="text-indigo-500"
+                    className={progress >= 75 ? 'text-emerald-500' : 'text-rose-500'}
                     stroke="currentColor"
                     strokeWidth="3.5"
                     strokeLinecap="round"
                     fill="none"
                     d="M18 2a16 16 0 1 1 0 32 16 16 0 1 1 0-32"
-                    style={{ strokeDasharray: `${progress},100` }}
+                    style={{ 
+                      strokeDasharray: '100.53, 100.53',
+                      strokeDashoffset: `${100.53 - (progress / 100) * 100.53}`,
+                      transform: 'rotate(-90deg)',
+                      transformOrigin: '50% 50%',
+                      transition: 'stroke-dashoffset 0.3s ease, color 0.3s ease'
+                    }}
                   />
                 </svg>
                 <div className="absolute inset-0 grid place-items-center">
                   <div className="text-center">
                     <div className="text-4xl font-semibold">{progress}%</div>
                     <div className="text-sm text-neutral-500">Attendance</div>
-                    {attendanceStats && (
-                      <div className="text-xs text-neutral-400 mt-1">
-                        {attendanceStats.presentClasses} / {attendanceStats.totalClasses} classes
-                      </div>
-                    )}
+                    {attendanceStats && (() => {
+                      // Calculate total classes held from subject-wise data
+                      const totalClassesHeld = Object.values(attendanceStats.subjectWise || {}).reduce((sum, stats) => {
+                        return sum + (stats.classesHeld || stats.total || 0);
+                      }, 0);
+                      const totalPresent = Object.values(attendanceStats.subjectWise || {}).reduce((sum, stats) => {
+                        return sum + (stats.present || 0);
+                      }, 0);
+                      return (
+                        <div className="text-xs text-neutral-400 mt-1">
+                          {totalPresent} / {totalClassesHeld || attendanceStats.totalClasses} classes
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
             </div>
             
-            {/* Subject-wise Attendance Details */}
+            {/* Subject-wise Attendance Details - Scrollable */}
             {attendanceStats && attendanceStats.subjectWise && Object.keys(attendanceStats.subjectWise).length > 0 && (
-              <div className="mt-6">
-                <div className="font-semibold mb-3">Subject-wise Attendance</div>
-                <div className="space-y-2">
+              <div className="mt-6 flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="font-semibold mb-3 flex-shrink-0">Subject-wise Attendance</div>
+                <div className="space-y-2 flex-1 overflow-y-auto scrollbar-hide pr-2">
                   {Object.entries(attendanceStats.subjectWise).map(([subject, stats]) => (
-                    <div key={subject} className="flex items-center justify-between p-3 rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                    <div key={subject} className="flex items-center justify-between p-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex-shrink-0">
                       <div>
                         <div className="font-medium text-sm">{subject}</div>
                         <div className="text-xs text-neutral-500 mt-1">
