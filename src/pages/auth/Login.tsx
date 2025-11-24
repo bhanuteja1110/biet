@@ -3,10 +3,12 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../../firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock, Loader2 } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [monkeyState, setMonkeyState] = useState("idle"); // idle | email-focused | password-focused | blinking
@@ -108,77 +110,156 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-dvh grid place-items-center bg-gradient-to-br from-neutral-100 via-white to-neutral-200 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 p-4">
+      <div className="w-full max-w-md">
         <form
           onSubmit={onSubmit}
-          className="card p-6 bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10"
+          className="card p-8 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-neutral-200/50 dark:border-neutral-700/50"
         >
-          {/* 🐵 Monkey Mascot */}
+          {/* 🐵 Monkey Mascot with smooth animation */}
           <div className="flex justify-center mb-6">
-            <img
-              src={
-                monkeyState === "password-focused"
-                  ? "/monkey-hands.png"
-                  : monkeyState === "blinking"
-                  ? "/monkey-closed.png"
-                  : "/monkey-open.png"
-              }
-              alt="Monkey Mascot"
-              className="w-32 h-32 drop-shadow-md transition-all duration-200"
-            />
+            <div className="relative">
+              <img
+                src={
+                  monkeyState === "password-focused"
+                    ? "/monkey-hands.png"
+                    : monkeyState === "blinking"
+                    ? "/monkey-closed.png"
+                    : "/monkey-open.png"
+                }
+                alt="Monkey Mascot"
+                className="w-32 h-32 drop-shadow-lg transition-all duration-300 ease-in-out transform hover:scale-105"
+              />
+            </div>
           </div>
 
           {/* 🎓 College Logo + Name */}
-          <div className="flex items-center justify-center gap-3 mb-4">
+          <div className="flex flex-col items-center gap-3 mb-8">
             <img
               src="/college-logo.png"
               alt="College Logo"
-              className="w-11 h-12 object-contain drop-shadow-md"
+              className="w-14 h-14 object-contain drop-shadow-md"
             />
-            <div className="text-lg font-semibold text-center text-neutral-800 dark:text-neutral-100">
-              Bharat Institute of Engineering & Technology
+            <div className="text-center">
+              <h1 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">
+                Bharat Institute of Engineering & Technology
+              </h1>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                Student Portal
+              </p>
             </div>
           </div>
 
           {/* 🧠 Input Fields */}
-          <div className="mt-4 grid gap-3">
-            <input
-              className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-500/40"
-              value={email}
-              onFocus={() => setMonkeyState("email-focused")}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => setMonkeyState("idle")}
-              placeholder="Email"
-            />
+          <div className="space-y-4">
+            {/* Email Input */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-neutral-400" />
+              </div>
+              <input
+                type="email"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:ring-indigo-400/50 dark:focus:border-indigo-400 transition-all duration-200"
+                value={email}
+                onFocus={() => setMonkeyState("email-focused")}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(null);
+                }}
+                onBlur={() => setMonkeyState("idle")}
+                placeholder="Enter your email"
+                disabled={loading}
+                required
+              />
+            </div>
 
-            <input
-              type="password"
-              className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-500/40"
-              value={password}
-              onFocus={() => setMonkeyState("password-focused")}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setMonkeyState("idle")}
-              placeholder="Password"
-            />
+            {/* Password Input with Show/Hide Toggle */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-neutral-400" />
+              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                className="w-full pl-10 pr-12 py-3 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white/50 dark:bg-neutral-800/50 backdrop-blur-sm text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:ring-indigo-400/50 dark:focus:border-indigo-400 transition-all duration-200"
+                value={password}
+                onFocus={() => setMonkeyState("password-focused")}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
+                onBlur={() => setMonkeyState("idle")}
+                placeholder="Enter your password"
+                disabled={loading}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors duration-200"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
 
-            {error && <div className="text-sm text-rose-600">{error}</div>}
+            {/* Error Message */}
+            {error && (
+              <div className="mt-2 p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span>{error}</span>
+              </div>
+            )}
 
+            {/* Login Button */}
             <button
-              disabled={loading}
-              className="mt-2 px-4 py-2 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:scale-105 transition-transform duration-200"
+              type="submit"
+              disabled={loading || !email || !password}
+              className="w-full mt-6 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 dark:from-indigo-500 dark:to-purple-500 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
             >
-              {loading ? "Signing in…" : "Login"}
+              {loading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <span>Sign In</span>
+              )}
             </button>
           </div>
 
-          <div className="mt-4 text-sm flex justify-end">
+          {/* Forgot Password Link */}
+          <div className="mt-6 text-center">
             <Link
               to="/auth/reset"
-              className="underline text-neutral-600 dark:text-neutral-300"
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline transition-colors duration-200"
             >
               Forgot password?
             </Link>
+          </div>
+
+          {/* Footer - Designed by SPREAD */}
+          <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center justify-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+              <span>Designed and developed by</span>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/spread-logo.png"
+                  alt="SPREAD"
+                  className="h-7 w-auto object-contain"
+                  onError={(e) => {
+                    // Fallback if image doesn't exist - hide the image element
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400">SPREAD</span>
+              </div>
+            </div>
           </div>
         </form>
       </div>
