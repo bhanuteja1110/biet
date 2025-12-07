@@ -306,7 +306,7 @@ export default function Login() {
                 <img
                   src="/ananta.png"
                   alt="SPREAD"
-                  className="h-7 w-auto object-contain"
+                  className="h-14 w-auto object-contain"
                   onError={(e) => {
                     // Fallback if image doesn't exist - hide the image element
                     (e.target as HTMLImageElement).style.display = 'none';
