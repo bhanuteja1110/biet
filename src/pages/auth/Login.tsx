@@ -306,13 +306,13 @@ export default function Login() {
                 <img
                   src="/ananta.png"
                   alt="SPREAD"
-                  className="h-14 w-auto object-contain"
+                  className="h-14 w-14 object-contain"
                   onError={(e) => {
                     // Fallback if image doesn't exist - hide the image element
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
-                <span className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">.</span>
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"></span>
               </a>
             </div>
           </div>
