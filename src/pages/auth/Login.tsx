@@ -296,7 +296,7 @@ export default function Login() {
           {/* Footer - Designed by SPREAD */}
           <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-700">
             <div className="flex items-center justify-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-              <span>Designed and developed by</span>
+              <span>Designed and Developed by</span>
               <a
                 href="https://aspread.site"
                 target="_blank"
@@ -306,7 +306,7 @@ export default function Login() {
                 <img
                   src="/ananta.png"
                   alt="SPREAD"
-                  className="h-14 w-14 object-contain"
+                  className="h-14 w-16 object-contain"
                   onError={(e) => {
                     // Fallback if image doesn't exist - hide the image element
                     (e.target as HTMLImageElement).style.display = 'none';
