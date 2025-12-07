@@ -304,7 +304,7 @@ export default function Login() {
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity duration-200"
               >
                 <img
-                  src="/spread-logo.png"
+                  src="/ananta.png"
                   alt="SPREAD"
                   className="h-7 w-auto object-contain"
                   onError={(e) => {
@@ -312,7 +312,7 @@ export default function Login() {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
-                <span className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">SPREAD</span>
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">.</span>
               </a>
             </div>
           </div>
